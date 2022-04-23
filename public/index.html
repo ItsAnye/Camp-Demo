@@ -163,59 +163,20 @@
 </body>
   
 <script>
-    var playerArr = []; //0: Idle
-    var player
-    var playerState = 0;
-
   function start() {
-    //Why doesn't animation run?
-
-    
-    const loader = new THREE.FBXLoader();
-    var mixer;
-    
-    loader.load('Assets/Animations/Idle.fbx', function(object){
-        mixer = new THREE.AnimationMixer(object);
-
-        const action = mixer.clipAction(object.animations[0]);
-        action.play();
-        object.traverse(function (child){
-            if (child.isMesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
-                child.frustumCulled = false;
-            }
-        });
-
-        object.children[0].material.color.setHex(0x000000); //Sunglasses
-        object.children[1].material.color.setHex(0x3e1b00); //Hair
-        object.children[2].material.color.setHex(0xFF0000); //Leg
-        object.children[3].material.color.setHex(0xFF0000); //Leg
-        object.children[4].material.color.setHex(0xCAA379); //Arm
-        object.children[5].material.color.setHex(0xCAA379); //Arm
-        object.children[6].material.color.setHex(0x0000FF); //Torso
-        object.children[7].material.color.setHex(0xCAA379); //Head
-
-        object.rotation.x = Math.PI / 2
-        object.position.x = 11;
-        scene.add(object);
-
-        playerArr.push(object);
-        player = playerArr[playerState]
-    });
-
+    //Added nametag :) Make sure name tag has correct username and is above player - also updates on movement.
     //Username
-    var username = document.getElementById("nameField").value;
+    let username = document.getElementById("nameField").value;
     document.getElementById("border").style.display = "none";
     document.getElementById("chat").style.display = "block";
     
     //Chat code
-    var socket = io();
+    let socket = io();
     
-    var messages = document.getElementById('messages');
-    var form = document.getElementById('chatForm');
-    var input = document.getElementById('chatInput');
-    var chatPanel = document.getElementById('chatPanel')
+    let messages = document.getElementById('messages');
+    let form = document.getElementById('chatForm');
+    let input = document.getElementById('chatInput');
+    let chatPanel = document.getElementById('chatPanel')
     
     form.addEventListener('submit', function(e) {
       e.preventDefault();
@@ -226,7 +187,7 @@
     });
     
     socket.on('chat message', function(msg) { 
-      var item = document.createElement('li'); 
+      let item = document.createElement('li'); 
       item.textContent = `[${msg[0]}]: ${msg[1]}`;
       messages.appendChild(item);
     });
@@ -250,71 +211,103 @@
         sprintSpeed: 0.4
     }
     
-    var scene = new THREE.Scene();
-    var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
-    var renderer = new THREE.WebGLRenderer();
+    let scene = new THREE.Scene();
+    let camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+    let renderer = new THREE.WebGLRenderer();
     
     camera.position.z = 5;
     camera.up.set(0, 0, 1);
     
     //START
+    function createShop() {
+        let box1Geometry = new THREE.BoxGeometry(1, 5, 5);
+        let box1Material = new THREE.MeshLambertMaterial({color: 0xA020F0});
+        let box1 = new THREE.Mesh(box1Geometry, box1Material);
+        
+        box1.position.z = 2.5;
 
-    //Room
-    var box1Geometry = new THREE.BoxGeometry(1, 5, 5);
-    var box1Material = new THREE.MeshLambertMaterial({color: 0xA020F0});
-    var box1 = new THREE.Mesh(box1Geometry, box1Material);
+        let box2Geometry = new THREE.BoxGeometry(1, 5, 5);
+        let box2Material = new THREE.MeshLambertMaterial({color: 0xA020F0});
+        let box2 = new THREE.Mesh(box2Geometry, box2Material);
+        
+        box2.position.set(2.5, 2, 2.5);
+        box2.rotation.z = Math.PI / 2;
+
+        let box3Geometry = new THREE.BoxGeometry(1, 5, 5);
+        let box3Material = new THREE.MeshLambertMaterial({color: 0xA020F0});
+        let box3 = new THREE.Mesh(box3Geometry, box3Material);
+        
+        box3.position.z = 2.5;
+        box3.position.x = 5;
+
+        let box4Geometry = new THREE.BoxGeometry(1, 5, 6);
+        let box4Material = new THREE.MeshLambertMaterial({color: 0xA020F0});
+        let box4 = new THREE.Mesh(box4Geometry, box4Material);
+
+        box4.position.set(2.5, 0, 5);
+        box4.rotation.y = Math.PI / 2;
+
+        let group = new THREE.Group();
+        group.add(box1);
+        group.add(box2);
+        group.add(box3);
+        group.add(box4);
+        
+        return group;
+    }
+
+    //Shop
+    let shop = createShop();
+    shop.position.x = -2.5;
+    // scene.add(shop);
+
+    //Player
+    let cubeGeometry = new THREE.BoxGeometry(2, 2, 2);
+    let cubeMaterial = new THREE.MeshLambertMaterial({color: 0xff0000});
+    let player = new THREE.Mesh(cubeGeometry, cubeMaterial);
     
-    box1.position.z = 2.5;
+    player.position.z = 1;
+    scene.add(player);
 
-    var box2Geometry = new THREE.BoxGeometry(1, 5, 5);
-    var box2Material = new THREE.MeshLambertMaterial({color: 0xA020F0});
-    var box2 = new THREE.Mesh(box2Geometry, box2Material);
-    
-    box2.position.set(2.5, 2, 2.5);
-    box2.rotation.z = Math.PI / 2;
+    //Nametag
+    var name = 'Rovdjuret';
+    var element = document.createElement('canvas');
+    var ctx = element.getContext("2d");
+    ctx.font="20px Georgia";
+    ctx.canvas.width = 256;
+    ctx.canvas.height = 128;
+    ctx.canvas.fillStyle = '#FFF';
+    ctx.canvas.textAlign = 'center';
+    ctx.fillText(name, 10, 50);
 
-    var box3Geometry = new THREE.BoxGeometry(1, 5, 5);
-    var box3Material = new THREE.MeshLambertMaterial({color: 0xA020F0});
-    var box3 = new THREE.Mesh(box3Geometry, box3Material);
-    
-    box3.position.z = 2.5;
-    box3.position.x = 5;
+    const map = new THREE.CanvasTexture(ctx.canvas)
+    let sprite = new THREE.Sprite(
+        new THREE.SpriteMaterial({map: map, color: 0xFFFFFF})
+    );
+    sprite.scale.set(20, 10, 1);
+    sprite.position.y = 10;
+    scene.add(sprite)
 
-    var box4Geometry = new THREE.BoxGeometry(1, 5, 6);
-    var box4Material = new THREE.MeshLambertMaterial({color: 0xA020F0});
-    var box4 = new THREE.Mesh(box4Geometry, box4Material);
 
-    box4.position.set(2.5, 0, 5);
-    box4.rotation.y = Math.PI / 2;
-
-    var group = new THREE.Group();
-    group.add(box1);
-    group.add(box2);
-    group.add(box3);
-    group.add(box4);
-    
-    group.position.x = -2.5;
-    // scene.add(group);
-    
     //Lights
-    var spotlight = new THREE.SpotLight(0xffffff, 2.5, 0, Math.PI / 2);
+    let spotlight = new THREE.SpotLight(0xffffff, 2.5, 0, Math.PI / 2);
     spotlight.position.z = 5;
     spotlight.position.y = 5;
     spotlight.lookAt(0, 0, 0);
     scene.add(spotlight);
     
-    var ambient = new THREE.AmbientLight(0xffffff, 0.5)
+    let ambient = new THREE.AmbientLight(0xffffff, 0.5)
     scene.add(ambient);
     
     //Controls
-    var controls = new THREE.OrbitControls(camera, renderer.domElement);
+    let controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enablePan = false;
     controls.update();
     
     //Plane
-    var planeGeometry = new THREE.PlaneGeometry(50, 50);
-    var planeMaterial = new THREE.MeshLambertMaterial({color: 0x90EE90});
-    var plane = new THREE.Mesh(planeGeometry, planeMaterial);
+    let planeGeometry = new THREE.PlaneGeometry(50, 50);
+    let planeMaterial = new THREE.MeshLambertMaterial({color: 0x90EE90});
+    let plane = new THREE.Mesh(planeGeometry, planeMaterial);
     
     scene.add(plane);
     
@@ -322,6 +315,7 @@
     renderer.shadowMap.enabled = true;
     
     spotlight.castShadow = true;
+    player.castShadow = true;
     plane.receiveShadow = true;
     
     //END
@@ -332,86 +326,75 @@
     
     function updateControls(){
       //Movement Controls
-      if (player == undefined) {
-          return;
-      }
-      
       if(controls.enabled){
           controls.target.copy(player.position);
     
           if(keysPressed[KEY_SHIFT]){
               //Left and Right Rotation
               if(keysPressed[KEY_LEFT]){
-                  player.rotation.y += playerSettings.turnSpeed;
+                  player.rotation.z += playerSettings.turnSpeed;
               }
       
               if(keysPressed[KEY_RIGHT]){
-                  player.rotation.y -= playerSettings.turnSpeed;
+                  player.rotation.z -= playerSettings.turnSpeed;
               }
               
               //W and S Movement
               if(keysPressed[KEY_W] || keysPressed[KEY_UP]){
-                  player.position.x += Math.sin(player.rotation.y) * playerSettings.sprintSpeed;
-                  player.position.y += -Math.cos(player.rotation.y) * playerSettings.sprintSpeed;
+                  player.position.x -= Math.sin(player.rotation.z) * playerSettings.sprintSpeed;
+                  player.position.y -= -Math.cos(player.rotation.z) * playerSettings.sprintSpeed;
       
-                  camera.position.x += Math.sin(player.rotation.y) * playerSettings.sprintSpeed;
-                  camera.position.y += -Math.cos(player.rotation.y) * playerSettings.sprintSpeed;
+                  camera.position.x -= Math.sin(player.rotation.z) * playerSettings.sprintSpeed;
+                  camera.position.y -= -Math.cos(player.rotation.z) * playerSettings.sprintSpeed;
               }
       
               if(keysPressed[KEY_S] || keysPressed[KEY_DOWN]){
-                  player.position.x -= Math.sin(player.rotation.y) * playerSettings.sprintSpeed;
-                  player.position.y -= -Math.cos(player.rotation.y) * playerSettings.sprintSpeed;
+                  player.position.x += Math.sin(player.rotation.z) * playerSettings.sprintSpeed;
+                  player.position.y += -Math.cos(player.rotation.z) * playerSettings.sprintSpeed;
       
-                  camera.position.x -= Math.sin(player.rotation.y) * playerSettings.sprintSpeed;
-                  camera.position.y -= -Math.cos(player.rotation.y) * playerSettings.sprintSpeed;
+                  camera.position.x += Math.sin(player.rotation.z) * playerSettings.sprintSpeed;
+                  camera.position.y += -Math.cos(player.rotation.z) * playerSettings.sprintSpeed;
               }
           } else {
               //Left and Right Rotation
               if(keysPressed[KEY_LEFT]){
-                  player.rotation.y += playerSettings.turnSpeed;
+                  player.rotation.z += playerSettings.turnSpeed;
               }
       
               if(keysPressed[KEY_RIGHT]){
-                  player.rotation.y -= playerSettings.turnSpeed;
+                  player.rotation.z -= playerSettings.turnSpeed;
               }
               
               //W and S Movement
               if(keysPressed[KEY_W] || keysPressed[KEY_UP]){
-                  player.position.x += Math.sin(player.rotation.y) * playerSettings.speed;
-                  player.position.y += -Math.cos(player.rotation.y) * playerSettings.speed;
+                  player.position.x -= Math.sin(player.rotation.z) * playerSettings.speed;
+                  player.position.y -= -Math.cos(player.rotation.z) * playerSettings.speed;
       
-                  camera.position.x += Math.sin(player.rotation.y) * playerSettings.speed;
-                  camera.position.y += -Math.cos(player.rotation.y) * playerSettings.speed;
+                  camera.position.x -= Math.sin(player.rotation.z) * playerSettings.speed;
+                  camera.position.y -= -Math.cos(player.rotation.z) * playerSettings.speed;
               }
       
               if(keysPressed[KEY_S] || keysPressed[KEY_DOWN]){
-                  player.position.x -= Math.sin(player.rotation.y) * playerSettings.speed;
-                  player.position.y -= -Math.cos(player.rotation.y) * playerSettings.speed;
+                  player.position.x += Math.sin(player.rotation.z) * playerSettings.speed;
+                  player.position.y += -Math.cos(player.rotation.z) * playerSettings.speed;
       
-                  camera.position.x -= Math.sin(player.rotation.y) * playerSettings.speed;
-                  camera.position.y -= -Math.cos(player.rotation.y) * playerSettings.speed;
+                  camera.position.x += Math.sin(player.rotation.z) * playerSettings.speed;
+                  camera.position.y += -Math.cos(player.rotation.z) * playerSettings.speed;
               }
           }
       }
     }
-    const clock = new THREE.Clock();
+
     function render() {
         updateControls();
-
-        const delta = clock.getDelta();
-
-        if (mixer) mixer.update(delta);
-        // player = playerArr[playerState]
 
         requestAnimationFrame(render);
         renderer.render(scene, camera);
     };
-      
     render();
     
-    var moving;
     document.addEventListener('keydown', (event) => {
-        keysPressed[event.key.toLowerCase()] = true;
+      keysPressed[event.key.toLowerCase()] = true;
     }, false);
     
     document.addEventListener('keyup', (event) => {
