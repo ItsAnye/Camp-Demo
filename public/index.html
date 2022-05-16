@@ -74,7 +74,7 @@
         margin-left: 15px;
         margin-top: 15px;
       }
-      
+
       #chatInput::placeholder {
         color: rgb(50, 50, 50);
         font-size: 15px;
@@ -89,7 +89,7 @@
         margin-top: 15px;
         list-style: none;
       }
-      
+
       #messages > li { 
         margin-top: 5px;
       }
@@ -138,10 +138,10 @@
         <div id="topButtonSettings">
           <img src="https://i.ibb.co/FbDY4D7/logo-prev-ui-prev-ui.png">
         </div>
-  
+
         <div id="topButtonChat"></div>
       </div>
-    
+
       <div id="chatPanel" class="ui">
         <ul id="messages"></ul>
         <form id="chatForm" action="">
@@ -154,30 +154,36 @@
     <div id="border">
       <h1 id="title">Meltdown</h1>
       <br><br><br>
-      <input id="nameField" placeholder="Enter your username:"></input>
+      <input id="nameField" autocomplete="off" placeholder="Enter your username:"></input>
       <br>
       <button onclick="start()">Play</button>
     </div>
-  
+
     <script src="/socket.io/socket.io.js"></script>
 </body>
-  
+
 <script>
+    var playerArr = []; //0: Idle
+    var player
+    var playerState = 0;
+
   function start() {
-    //Added nametag :) Make sure name tag has correct username and is above player - also updates on movement.
+
     //Username
-    let username = document.getElementById("nameField").value;
+    var username = document.getElementById("nameField").value;
     document.getElementById("border").style.display = "none";
     document.getElementById("chat").style.display = "block";
-    
+
     //Chat code
-    let socket = io();
-    
-    let messages = document.getElementById('messages');
-    let form = document.getElementById('chatForm');
-    let input = document.getElementById('chatInput');
-    let chatPanel = document.getElementById('chatPanel')
-    
+    var socket = io();
+
+    var messages = document.getElementById('messages');
+    var form = document.getElementById('chatForm');
+    var input = document.getElementById('chatInput');
+    var chatPanel = document.getElementById('chatPanel')
+
+    var players = [];
+
     form.addEventListener('submit', function(e) {
       e.preventDefault();
       if (input.value) {
@@ -185,16 +191,39 @@
         input.value = '';
       }
     });
-    
+
     socket.on('chat message', function(msg) { 
-      let item = document.createElement('li'); 
+      var item = document.createElement('li'); 
       item.textContent = `[${msg[0]}]: ${msg[1]}`;
       messages.appendChild(item);
     });
-    
+
+    //New guy comes in the server
+    socket.on('addPlayerToOthers', function(data) {
+        players.push(data);
+        scene.add(drawPlayer());
+    });
+
+    //Players before you
+    socket.on('addExistingPlayers', function(playersToAdd){
+        playersToAdd.forEach(playerObject => {
+            players.push(playerObject);
+            scene.add(drawPlayer());
+        });
+    })
+
+    socket.on('userLeft', function(socketId){
+        players.forEach(function(playerObject) {
+            console.log(playerObject[2], socketId);
+            if(playerObject[2] == socketId){
+                console.log(playerObject[1]); //You can't remove... player mesh isn't being added properly to the array.
+            }
+        });
+    });
+
     //Game code
     const keysPressed = {};
-    
+
     const KEY_UP = 'arrowup';
     const KEY_LEFT = 'arrowleft';
     const KEY_DOWN = 'arrowdown';
@@ -204,182 +233,171 @@
     const KEY_S = 's';
     const KEY_D = 'd';
     const KEY_SHIFT = 'shift';
-    
+
     let playerSettings = {
         turnSpeed: Math.PI * 0.01,
         speed: 0.2,
         sprintSpeed: 0.4
     }
-    
-    let scene = new THREE.Scene();
-    let camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
-    let renderer = new THREE.WebGLRenderer();
-    
+
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+    var renderer = new THREE.WebGLRenderer();
+
     camera.position.z = 5;
     camera.up.set(0, 0, 1);
-    
+
     //START
-    function createShop() {
-        let box1Geometry = new THREE.BoxGeometry(1, 5, 5);
-        let box1Material = new THREE.MeshLambertMaterial({color: 0xA020F0});
-        let box1 = new THREE.Mesh(box1Geometry, box1Material);
-        
-        box1.position.z = 2.5;
 
-        let box2Geometry = new THREE.BoxGeometry(1, 5, 5);
-        let box2Material = new THREE.MeshLambertMaterial({color: 0xA020F0});
-        let box2 = new THREE.Mesh(box2Geometry, box2Material);
-        
-        box2.position.set(2.5, 2, 2.5);
-        box2.rotation.z = Math.PI / 2;
+    //Room
+    var box1Geometry = new THREE.BoxGeometry(1, 5, 5);
+    var box1Material = new THREE.MeshLambertMaterial({color: 0xA020F0});
+    var box1 = new THREE.Mesh(box1Geometry, box1Material);
 
-        let box3Geometry = new THREE.BoxGeometry(1, 5, 5);
-        let box3Material = new THREE.MeshLambertMaterial({color: 0xA020F0});
-        let box3 = new THREE.Mesh(box3Geometry, box3Material);
-        
-        box3.position.z = 2.5;
-        box3.position.x = 5;
+    box1.position.z = 2.5;
 
-        let box4Geometry = new THREE.BoxGeometry(1, 5, 6);
-        let box4Material = new THREE.MeshLambertMaterial({color: 0xA020F0});
-        let box4 = new THREE.Mesh(box4Geometry, box4Material);
+    var box2Geometry = new THREE.BoxGeometry(1, 5, 5);
+    var box2Material = new THREE.MeshLambertMaterial({color: 0xA020F0});
+    var box2 = new THREE.Mesh(box2Geometry, box2Material);
 
-        box4.position.set(2.5, 0, 5);
-        box4.rotation.y = Math.PI / 2;
+    box2.position.set(2.5, 2, 2.5);
+    box2.rotation.z = Math.PI / 2;
 
-        let group = new THREE.Group();
-        group.add(box1);
-        group.add(box2);
-        group.add(box3);
-        group.add(box4);
-        
-        return group;
-    }
+    var box3Geometry = new THREE.BoxGeometry(1, 5, 5);
+    var box3Material = new THREE.MeshLambertMaterial({color: 0xA020F0});
+    var box3 = new THREE.Mesh(box3Geometry, box3Material);
 
-    //Shop
-    let shop = createShop();
-    shop.position.x = -2.5;
-    // scene.add(shop);
+    box3.position.z = 2.5;
+    box3.position.x = 5;
+
+    var box4Geometry = new THREE.BoxGeometry(1, 5, 6);
+    var box4Material = new THREE.MeshLambertMaterial({color: 0xA020F0});
+    var box4 = new THREE.Mesh(box4Geometry, box4Material);
+
+    box4.position.set(2.5, 0, 5);
+    box4.rotation.y = Math.PI / 2;
+
+    var group = new THREE.Group();
+    group.add(box1);
+    group.add(box2);
+    group.add(box3);
+    group.add(box4);
+
+    group.position.x = -2.5;
+    // scene.add(group);
 
     //Player
-    let cubeGeometry = new THREE.BoxGeometry(2, 2, 2);
-    let cubeMaterial = new THREE.MeshLambertMaterial({color: 0xff0000});
-    let player = new THREE.Mesh(cubeGeometry, cubeMaterial);
-    
-    player.position.z = 1;
+    function drawPlayer(){
+        var cubeGeometry = new THREE.BoxGeometry(2, 2, 2);
+        var cubeMaterial = new THREE.MeshLambertMaterial({color: 0xff0000});
+        var player = new THREE.Mesh(cubeGeometry, cubeMaterial);
+
+        player.position.z = 1;
+
+        return player;
+    }
+
+    player = drawPlayer();
     scene.add(player);
+    
+    let data = [username, player]
 
-    //Nametag
-    var name = 'Rovdjuret';
-    var element = document.createElement('canvas');
-    var ctx = element.getContext("2d");
-    ctx.font="20px Georgia";
-    ctx.canvas.width = 256;
-    ctx.canvas.height = 128;
-    ctx.canvas.fillStyle = '#FFF';
-    ctx.canvas.textAlign = 'center';
-    ctx.fillText(name, 10, 50);
-
-    const map = new THREE.CanvasTexture(ctx.canvas)
-    let sprite = new THREE.Sprite(
-        new THREE.SpriteMaterial({map: map, color: 0xFFFFFF})
-    );
-    sprite.scale.set(20, 10, 1);
-    sprite.position.y = 10;
-    scene.add(sprite)
-
+    socket.emit('addPlayer', data);
 
     //Lights
-    let spotlight = new THREE.SpotLight(0xffffff, 2.5, 0, Math.PI / 2);
+    var spotlight = new THREE.SpotLight(0xffffff, 2.5, 0, Math.PI / 2);
     spotlight.position.z = 5;
     spotlight.position.y = 5;
     spotlight.lookAt(0, 0, 0);
     scene.add(spotlight);
-    
-    let ambient = new THREE.AmbientLight(0xffffff, 0.5)
+
+    var ambient = new THREE.AmbientLight(0xffffff, 0.5)
     scene.add(ambient);
-    
+
     //Controls
-    let controls = new THREE.OrbitControls(camera, renderer.domElement);
+    var controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enablePan = false;
     controls.update();
-    
+
     //Plane
-    let planeGeometry = new THREE.PlaneGeometry(50, 50);
-    let planeMaterial = new THREE.MeshLambertMaterial({color: 0x90EE90});
-    let plane = new THREE.Mesh(planeGeometry, planeMaterial);
-    
+    var planeGeometry = new THREE.PlaneGeometry(50, 50);
+    var planeMaterial = new THREE.MeshLambertMaterial({color: 0x90EE90});
+    var plane = new THREE.Mesh(planeGeometry, planeMaterial);
+
     scene.add(plane);
-    
+
     //Shadows
     renderer.shadowMap.enabled = true;
-    
+
     spotlight.castShadow = true;
-    player.castShadow = true;
     plane.receiveShadow = true;
-    
+
     //END
-    
+
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
     renderer.setClearColor(0x87CEEB);
-    
+
     function updateControls(){
       //Movement Controls
+      if (player == undefined) {
+          return;
+      }
+
       if(controls.enabled){
           controls.target.copy(player.position);
-    
+
           if(keysPressed[KEY_SHIFT]){
               //Left and Right Rotation
               if(keysPressed[KEY_LEFT]){
                   player.rotation.z += playerSettings.turnSpeed;
               }
-      
+
               if(keysPressed[KEY_RIGHT]){
                   player.rotation.z -= playerSettings.turnSpeed;
               }
-              
+
               //W and S Movement
               if(keysPressed[KEY_W] || keysPressed[KEY_UP]){
-                  player.position.x -= Math.sin(player.rotation.z) * playerSettings.sprintSpeed;
-                  player.position.y -= -Math.cos(player.rotation.z) * playerSettings.sprintSpeed;
-      
-                  camera.position.x -= Math.sin(player.rotation.z) * playerSettings.sprintSpeed;
-                  camera.position.y -= -Math.cos(player.rotation.z) * playerSettings.sprintSpeed;
-              }
-      
-              if(keysPressed[KEY_S] || keysPressed[KEY_DOWN]){
                   player.position.x += Math.sin(player.rotation.z) * playerSettings.sprintSpeed;
                   player.position.y += -Math.cos(player.rotation.z) * playerSettings.sprintSpeed;
-      
+
                   camera.position.x += Math.sin(player.rotation.z) * playerSettings.sprintSpeed;
                   camera.position.y += -Math.cos(player.rotation.z) * playerSettings.sprintSpeed;
+              }
+
+              if(keysPressed[KEY_S] || keysPressed[KEY_DOWN]){
+                  player.position.x -= Math.sin(player.rotation.z) * playerSettings.sprintSpeed;
+                  player.position.y -= -Math.cos(player.rotation.z) * playerSettings.sprintSpeed;
+
+                  camera.position.x -= Math.sin(player.rotation.z) * playerSettings.sprintSpeed;
+                  camera.position.y -= -Math.cos(player.rotation.z) * playerSettings.sprintSpeed;
               }
           } else {
               //Left and Right Rotation
               if(keysPressed[KEY_LEFT]){
                   player.rotation.z += playerSettings.turnSpeed;
               }
-      
+
               if(keysPressed[KEY_RIGHT]){
                   player.rotation.z -= playerSettings.turnSpeed;
               }
-              
+
               //W and S Movement
               if(keysPressed[KEY_W] || keysPressed[KEY_UP]){
-                  player.position.x -= Math.sin(player.rotation.z) * playerSettings.speed;
-                  player.position.y -= -Math.cos(player.rotation.z) * playerSettings.speed;
-      
-                  camera.position.x -= Math.sin(player.rotation.z) * playerSettings.speed;
-                  camera.position.y -= -Math.cos(player.rotation.z) * playerSettings.speed;
-              }
-      
-              if(keysPressed[KEY_S] || keysPressed[KEY_DOWN]){
                   player.position.x += Math.sin(player.rotation.z) * playerSettings.speed;
                   player.position.y += -Math.cos(player.rotation.z) * playerSettings.speed;
-      
+
                   camera.position.x += Math.sin(player.rotation.z) * playerSettings.speed;
                   camera.position.y += -Math.cos(player.rotation.z) * playerSettings.speed;
+              }
+
+              if(keysPressed[KEY_S] || keysPressed[KEY_DOWN]){
+                  player.position.x -= Math.sin(player.rotation.z) * playerSettings.speed;
+                  player.position.y -= -Math.cos(player.rotation.z) * playerSettings.speed;
+
+                  camera.position.x -= Math.sin(player.rotation.z) * playerSettings.speed;
+                  camera.position.y -= -Math.cos(player.rotation.z) * playerSettings.speed;
               }
           }
       }
@@ -391,12 +409,13 @@
         requestAnimationFrame(render);
         renderer.render(scene, camera);
     };
+
     render();
-    
+
     document.addEventListener('keydown', (event) => {
-      keysPressed[event.key.toLowerCase()] = true;
+        keysPressed[event.key.toLowerCase()] = true;
     }, false);
-    
+
     document.addEventListener('keyup', (event) => {
         keysPressed[event.key.toLowerCase()] = false;
     }, false);
